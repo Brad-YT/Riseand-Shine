@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>Rise & Shine</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1422;--panel:#172235;--panel2:#202e44;--text:#f4f7fb;--muted:#aab6c8;--gold:#f2b85b;--green:#57c78b;--line:#304057}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#243650 0,#0d1422 48%);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);min-height:100vh}
+main{width:min(680px,100%);margin:auto;padding:24px 18px calc(36px + env(safe-area-inset-bottom))}
+header{display:flex;justify-content:space-between;align-items:center;margin:8px 0 20px}.brand{font-size:13px;letter-spacing:.18em;font-weight:800}.pill{font-size:12px;padding:7px 10px;border-radius:99px;background:#203d37;color:#8fe0b3}
+.hero{border:1px solid #3b4c63;border-radius:24px;padding:24px;background:linear-gradient(140deg,#293c55,#172337 70%);overflow:hidden}
+.eyebrow{color:#c1ccda;font-size:12px;letter-spacing:.13em;font-weight:700}.time{font-size:clamp(54px,15vw,82px);line-height:1.05;font-weight:800;letter-spacing:-.06em;margin:10px 0 4px}.sub{color:var(--muted);font-size:14px}.motto{font-size:18px;font-weight:700;margin-top:18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 24px}.stat,.section{background:var(--panel);border:1px solid var(--line);border-radius:17px}.stat{padding:14px 10px}.stat strong{display:block;font-size:23px;margin-top:5px}.stat span{font-size:12px;color:var(--muted)}
+h2{font-size:18px;margin:24px 0 12px}.progress-wrap{height:9px;border-radius:99px;background:#2b3a50;overflow:hidden;margin:10px 0 16px}.progress{height:100%;width:0;background:linear-gradient(90deg,#54c98a,#b4e68c);transition:width .2s}
+.task{display:flex;align-items:center;gap:13px;padding:15px;background:var(--panel);border:1px solid var(--line);border-radius:15px;margin:9px 0;cursor:pointer;user-select:none}.task input{width:22px;height:22px;accent-color:var(--green);flex:none}.task b{display:block;font-size:15px}.task small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.task.done{border-color:#347456;background:#142b2a}.task.done b{text-decoration:line-through;color:#b7c8c4}
+.note{background:#302b20;border:1px solid #655333;color:#f4dcae;padding:14px;border-radius:14px;font-size:13px;line-height:1.45;margin-top:18px}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}button{border:0;border-radius:12px;padding:12px 15px;font-weight:700;font-size:14px;background:var(--gold);color:#1a2230}button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.footer{color:var(--muted);font-size:11px;text-align:center;margin-top:25px;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+<header><div class="brand">☀ RISE &amp; SHINE</div><div class="pill">YOUR MORNING DASHBOARD</div></header>
+<section class="hero">
+ <div class="eyebrow">YOUR DAILY START</div>
+ <div class="time">5:30<span style="font-size:.38em;letter-spacing:0"> AM</span></div>
+ <div class="sub" id="dateLine">One step at a time. No negotiating with snooze.</div>
+ <div class="motto">Feet on the floor. Stay out of bed.</div>
+</section>
+<section class="stats">
+ <div class="stat"><span>🔥 STREAK</span><strong id="streak">0 days</strong></div>
+ <div class="stat"><span>⭐ TOTAL XP</span><strong id="xp">0</strong></div>
+ <div class="stat"><span>🎯 TODAY</span><strong id="count">0/6</strong></div>
+</section>
+<h2>Today's missions</h2>
+<div class="sub">Complete each task to earn 10 XP. Your progress is saved on this device.</div>
+<div class="progress-wrap"><div class="progress" id="bar"></div></div>
+<div id="tasks"></div>
+<div id="complete" class="note" hidden>🏆 Morning mission complete! You've earned today's 60 XP. Keep your momentum going.</div>
+<div class="actions">
+ <button class="secondary" id="reset">Reset today's checklist</button>
+</div>
+<div class="note"><b>Anti-snooze rule:</b> Put your phone somewhere you must stand up to reach. Once the alarm is off, go straight to the bathroom—don't sit or lie back down.</div>
+<div class="footer">Rise &amp; Shine saves checklist progress in this browser on this device. It does not sound alarms or send notifications by itself. Use Apple's Clock app for your 5:30 AM alarm.</div>
+</main>
+<script>
+const missions=[
+ ["Get out of bed","Stand up and put both feet on the floor."],
+ ["Turn on the lights","Open your curtains or switch on the room lights."],
+ ["Go to the bathroom","Walk straight there—don't return to bed."],
+ ["Drink some water","Have a glass of water."],
+ ["Make your bed","Make it less tempting to climb back in."],
+ ["Get dressed","Change out of your pajamas."]
+];
+const key="riseShineV1";
+const today=()=>new Date().toLocaleDateString("en-CA");
+let data=JSON.parse(localStorage.getItem(key)||'{"days":{},"tasks":{}}');
+const day=today();
+data.tasks[day] ||= [];
+function save(){localStorage.setItem(key,JSON.stringify(data));}
+function completedDays(){return Object.keys(data.days).filter(d=>data.days[d]).sort();}
+function streakNow(){
+ const days=completedDays();let n=0;let cursor=new Date();
+ if(!data.days[day]) cursor.setDate(cursor.getDate()-1);
+ for(;;){const k=cursor.toLocaleDateString("en-CA");if(!data.days[k])break;n++;cursor.setDate(cursor.getDate()-1);}
+ return n;
+}
+function render(){
+ const done=data.tasks[day]||[];
+ document.getElementById("dateLine").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+" · One step at a time.";
+ const root=document.getElementById("tasks");root.innerHTML="";
+ missions.forEach(([name,desc],i)=>{
+  const label=document.createElement("label");label.className="task"+(done.includes(i)?" done":"");
+  const input=document.createElement("input");input.type="checkbox";input.checked=done.includes(i);
+  input.addEventListener("change",()=>{
+   let arr=data.tasks[day]||[];
+   data.tasks[day]=input.checked?[...arr,i]:arr.filter(x=>x!==i);
+   if(data.tasks[day].length===missions.length)data.days[day]=true;else delete data.days[day];
+   save();render();
+  });
+  const text=document.createElement("div");text.innerHTML="<b></b><small></small>";text.querySelector("b").textContent=name;text.querySelector("small").textContent=desc;
+  label.append(input,text);root.append(label);
+ });
+ document.getElementById("count").textContent=done.length+"/6";
+ document.getElementById("xp").textContent=Object.values(data.tasks).reduce((sum,a)=>sum+a.length*10,0);
+ document.getElementById("streak").textContent=streakNow()+" days";
+ document.getElementById("bar").style.width=(done.length/6*100)+"%";
+ document.getElementById("complete").hidden=done.length!==6;
+}
+document.getElementById("reset").addEventListener("click",()=>{data.tasks[day]=[];delete data.days[day];save();render();});
+render();
+</script>
+</body></html>
